@@ -1,10 +1,13 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"html/template"
 	"net/http"
 	"strconv"
+
+	"github.com/H-ADJI/letsgo/internal/models"
 )
 
 func (a *app) home(w http.ResponseWriter, r *http.Request) {
@@ -29,15 +32,31 @@ func (a *app) snippetView(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
-	fmt.Fprintf(w, "Display a snippet with id : %d ...", id)
+	snippet, err := a.snippets.Get(id)
+	if err != nil {
+		if errors.Is(err, models.ErrNoRecords) {
+			http.NotFound(w, r)
+		} else {
+			a.serverError(w, r, err)
+		}
+		return
+	}
+
+	fmt.Fprintf(w, "%+v", snippet)
 }
 func (a *app) snippetCreate(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("Create a snippet using a form"))
 }
 func (a *app) snippetCreatePost(w http.ResponseWriter, r *http.Request) {
-	w.Header().Add("Server", "Go")
-	w.Header().Add("Cache-Control", "public")
-	w.Header().Add("Cache-Control", "max-age=31536000")
-	w.WriteHeader(http.StatusCreated)
-	w.Write([]byte("Save new snippet"))
+	title := "O, snail"
+	content := "O, snail\n Climb very fast\n or you'll get crushed"
+	expires := 7
+
+	id, err := a.snippets.Insert(title, content, expires)
+	if err != nil {
+		a.serverError(w, r, err)
+		return
+	}
+
+	http.Redirect(w, r, fmt.Sprintf("/snippet/view/%d", id), http.StatusSeeOther)
 }
