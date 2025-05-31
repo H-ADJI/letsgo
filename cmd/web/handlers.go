@@ -3,7 +3,6 @@ package main
 import (
 	"errors"
 	"fmt"
-	"html/template"
 	"net/http"
 	"strconv"
 
@@ -11,20 +10,13 @@ import (
 )
 
 func (a *app) home(w http.ResponseWriter, r *http.Request) {
-	ts, err := template.ParseFiles(
-		"./ui/html/pages/home.tmpl.html",
-		"./ui/html/partials/nav.tmpl.html",
-		"./ui/html/base.tmpl.html",
-	)
+	snippets, err := a.snippets.Latest()
 	if err != nil {
 		a.serverError(w, r, err)
 		return
 	}
-	err = ts.ExecuteTemplate(w, "base", nil)
-	if err != nil {
-		a.serverError(w, r, err)
-		return
-	}
+	data := TemplateData{Snippets: snippets}
+	a.render(w, r, http.StatusOK, "home.tmpl.html", data)
 }
 func (a *app) snippetView(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(r.PathValue("id"))
@@ -41,8 +33,8 @@ func (a *app) snippetView(w http.ResponseWriter, r *http.Request) {
 		}
 		return
 	}
-
-	fmt.Fprintf(w, "%+v", snippet)
+	data := TemplateData{Snippet: snippet}
+	a.render(w, r, http.StatusOK, "view.tmpl.html", data)
 }
 func (a *app) snippetCreate(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("Create a snippet using a form"))

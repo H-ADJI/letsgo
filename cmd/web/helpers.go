@@ -1,6 +1,10 @@
 package main
 
-import "net/http"
+import (
+	"bytes"
+	"fmt"
+	"net/http"
+)
 
 func (a *app) serverError(w http.ResponseWriter, r *http.Request, err error) {
 	var (
@@ -13,4 +17,27 @@ func (a *app) serverError(w http.ResponseWriter, r *http.Request, err error) {
 
 func (a *app) clientError(w http.ResponseWriter, status int) {
 	http.Error(w, http.StatusText(status), status)
+}
+
+func (a *app) render(
+	w http.ResponseWriter,
+	r *http.Request,
+	status int,
+	page string,
+	data TemplateData,
+) {
+
+	ts, ok := a.templateCache[page]
+	if !ok {
+		a.serverError(w, r, fmt.Errorf("The template %s does not exist", page))
+		return
+	}
+	buf := &bytes.Buffer{}
+	err := ts.ExecuteTemplate(buf, "base", data)
+	if err != nil {
+		a.serverError(w, r, err)
+		return
+	}
+	w.WriteHeader(status)
+	buf.WriteTo(w)
 }
