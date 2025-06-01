@@ -57,7 +57,12 @@ func main() {
 		sessionManager: sessionManager,
 	}
 	logger.Info("Server listening", "port", *addr)
-	err = http.ListenAndServe(*addr, app.routes())
+	srv := http.Server{
+		Addr:     *addr,
+		Handler:  app.routes(),
+		ErrorLog: slog.NewLogLogger(logger.Handler(), slog.LevelError),
+	}
+	err = srv.ListenAndServeTLS("./tls/cert.pem", "./tls/key.pem")
 	logger.Error(err.Error())
 	os.Exit(1)
 }
