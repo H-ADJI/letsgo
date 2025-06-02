@@ -19,6 +19,14 @@ func (a app) routes() http.Handler {
 	snippetMux.HandleFunc("GET /create", a.snippetCreate)
 	mux.Handle("/snippet/", http.StripPrefix("/snippet", dynamic.Then(snippetMux)))
 
+	userMux := http.NewServeMux()
+	userMux.HandleFunc("GET /signup", a.userSignup)
+	userMux.HandleFunc("POST /signup", a.userSignupPost)
+	userMux.HandleFunc("GET /login", a.userLogin)
+	userMux.HandleFunc("POST /login", a.userLoginPost)
+	userMux.HandleFunc("POST /logout", a.userLogoutPost)
+	mux.Handle("/user/", http.StripPrefix("/user", userMux))
+
 	fileserver := http.FileServer(http.Dir("./ui/static"))
 	mux.Handle("GET /static/", http.StripPrefix("/static", disableDirList(fileserver)))
 

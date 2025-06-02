@@ -12,6 +12,12 @@ import (
 
 var funcMap = template.FuncMap{"humanDate": humanDate}
 
+type userSignupForm struct {
+	Name     string
+	Email    string
+	Password string
+	validator.Validator
+}
 type snippetCreateForm struct {
 	Title   string
 	Content string

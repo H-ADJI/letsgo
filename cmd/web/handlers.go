@@ -99,3 +99,49 @@ func (a *app) snippetCreatePost(w http.ResponseWriter, r *http.Request) {
 	a.sessionManager.Put(r.Context(), "flash", "Snippet successfully created !")
 	http.Redirect(w, r, fmt.Sprintf("/snippet/view/%d", id), http.StatusSeeOther)
 }
+func (a *app) userSignup(w http.ResponseWriter, r *http.Request) {
+	a.render(w, r, http.StatusOK, "signup.tmpl.html", TemplateData{Form: userSignupForm{}})
+}
+func (a *app) userSignupPost(w http.ResponseWriter, r *http.Request) {
+	err := r.ParseForm()
+	if err != nil {
+		a.clientError(w, http.StatusBadRequest)
+		return
+	}
+	name := r.PostForm.Get("name")
+	email := r.PostForm.Get("email")
+	password := r.PostForm.Get("password")
+	form := userSignupForm{}
+	form.Name = name
+	form.Email = email
+	form.Password = password
+
+	form.CheckField(validator.NotBlank(name), "name", "this field can not be blank")
+	form.CheckField(validator.NotBlank(email), "email", "this field can not be blank")
+	form.CheckField(
+		validator.Matches(email, validator.EmailRX),
+		"email",
+		"This field must be a valid email address",
+	)
+	form.CheckField(validator.NotBlank(password), "password", "this field can not be blank")
+	form.CheckField(
+		validator.MinChars(password, 8),
+		"password",
+		"this field can not be at least 8 characters long",
+	)
+	if !form.IsValid() {
+		data := TemplateData{}
+		data.Form = form
+		a.render(w, r, http.StatusUnprocessableEntity, "signup.tmpl.html", data)
+		return
+	}
+}
+func (a *app) userLogin(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprintln(w, "Show login page")
+}
+func (a *app) userLoginPost(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprintln(w, "Send login state")
+}
+func (a *app) userLogoutPost(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprintln(w, "Remove login state")
+}
