@@ -13,12 +13,17 @@ var EmailRX = regexp.MustCompile(
 )
 
 type Validator struct {
-	FieldErrors map[string]string
+	FieldErrors    map[string]string
+	NonFieldErrors []string
 }
 
 func (v *Validator) IsValid() bool {
 	fmt.Println(len(v.FieldErrors))
-	return len(v.FieldErrors) == 0
+	return len(v.FieldErrors) == 0 && len(v.NonFieldErrors) == 0
+}
+
+func (v *Validator) AddNonFieldError(message string) {
+	v.NonFieldErrors = append(v.NonFieldErrors, message)
 }
 func (v *Validator) AddFieldError(key, message string) {
 	if v.FieldErrors == nil {

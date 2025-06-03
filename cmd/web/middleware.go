@@ -26,7 +26,6 @@ func commonHeaders(next http.Handler) http.Handler {
 		next.ServeHTTP(w, r)
 	})
 }
-
 func (a *app) logRequest(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var (
@@ -46,6 +45,16 @@ func (a *app) logRequest(next http.Handler) http.Handler {
 			"URI",
 			uri,
 		)
+		next.ServeHTTP(w, r)
+	})
+}
+func (a *app) requireAuth(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !a.isAuthenticated(r) {
+			http.Redirect(w, r, "/user/login", http.StatusSeeOther)
+			return
+		}
+		w.Header().Add("Cache-control", "no-store")
 		next.ServeHTTP(w, r)
 	})
 }

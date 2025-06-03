@@ -16,7 +16,8 @@ func (a *app) home(w http.ResponseWriter, r *http.Request) {
 		a.serverError(w, r, err)
 		return
 	}
-	data := TemplateData{Snippets: snippets}
+	data := a.NewTemplateData(r)
+	data.Snippets = snippets
 	a.render(w, r, http.StatusOK, "home.tmpl.html", data)
 }
 func (a *app) snippetView(w http.ResponseWriter, r *http.Request) {
@@ -39,12 +40,14 @@ func (a *app) snippetView(w http.ResponseWriter, r *http.Request) {
 	a.render(w, r, http.StatusOK, "view.tmpl.html", data)
 }
 func (a *app) snippetCreate(w http.ResponseWriter, r *http.Request) {
+	data := a.NewTemplateData(r)
+	data.Form = snippetCreateForm{Expires: 1}
 	a.render(
 		w,
 		r,
 		http.StatusOK,
 		"create.tmpl.html",
-		TemplateData{Form: snippetCreateForm{Expires: 1}},
+		data,
 	)
 }
 func (a *app) snippetCreatePost(w http.ResponseWriter, r *http.Request) {
@@ -130,18 +133,81 @@ func (a *app) userSignupPost(w http.ResponseWriter, r *http.Request) {
 		"this field can not be at least 8 characters long",
 	)
 	if !form.IsValid() {
-		data := TemplateData{}
+		data := a.NewTemplateData(r)
 		data.Form = form
 		a.render(w, r, http.StatusUnprocessableEntity, "signup.tmpl.html", data)
 		return
 	}
+	err = a.users.Insert(form.Name, form.Email, form.Password)
+	if err != nil {
+		if errors.Is(err, models.ErrDuplicateEmail) {
+			form.AddFieldError("email", "Email already used")
+			data := a.NewTemplateData(r)
+			data.Form = form
+			a.render(w, r, http.StatusUnprocessableEntity, "signup.tmpl.html", data)
+		} else {
+			a.serverError(w, r, err)
+		}
+		return
+	}
+	a.sessionManager.Put(r.Context(), "flash", "Your signup was successful. Please log in.")
+
+	// And redirect the user to the login page.
+	http.Redirect(w, r, "/user/login", http.StatusSeeOther)
 }
 func (a *app) userLogin(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintln(w, "Show login page")
+	a.render(w, r, http.StatusOK, "login.tmpl.html", TemplateData{Form: userLoginForm{}})
 }
 func (a *app) userLoginPost(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintln(w, "Send login state")
+	err := r.ParseForm()
+	if err != nil {
+		a.clientError(w, http.StatusBadRequest)
+		return
+	}
+	email := r.PostForm.Get("email")
+	password := r.PostForm.Get("password")
+	form := userLoginForm{}
+	form.Email = email
+	form.Password = password
+	form.CheckField(validator.NotBlank(password), "password", "this field can not be blank")
+	form.CheckField(validator.NotBlank(email), "email", "this field can not be blank")
+	form.CheckField(
+		validator.Matches(email, validator.EmailRX),
+		"email",
+		"This field must be a valid email address",
+	)
+	if !form.IsValid() {
+		data := a.NewTemplateData(r)
+		data.Form = form
+		a.render(w, r, http.StatusUnprocessableEntity, "login.tmpl.html", data)
+		return
+	}
+	id, err := a.users.Authenticate(email, password)
+	if err != nil {
+		if errors.Is(err, models.ErrInvalidCreds) {
+			form.AddNonFieldError("Email or Password is incorrect")
+			data := a.NewTemplateData(r)
+			data.Form = form
+			a.render(w, r, http.StatusUnprocessableEntity, "login.tmpl.html", data)
+		} else {
+			a.serverError(w, r, err)
+		}
+		return
+	}
+	err = a.sessionManager.RenewToken(r.Context())
+	if err != nil {
+		a.serverError(w, r, err)
+	}
+	a.sessionManager.Put(r.Context(), "authenticatedUserId", id)
+	http.Redirect(w, r, "/snippet/create", http.StatusSeeOther)
 }
 func (a *app) userLogoutPost(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintln(w, "Remove login state")
+	err := a.sessionManager.RenewToken(r.Context())
+	if err != nil {
+		a.serverError(w, r, err)
+		return
+	}
+	a.sessionManager.Remove(r.Context(), "authenticatedUserId")
+	a.sessionManager.Put(r.Context(), "flash", "You've been logged out")
+	http.Redirect(w, r, "/", http.StatusSeeOther)
 }

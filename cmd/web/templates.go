@@ -12,6 +12,11 @@ import (
 
 var funcMap = template.FuncMap{"humanDate": humanDate}
 
+type userLoginForm struct {
+	Email    string
+	Password string
+	validator.Validator
+}
 type userSignupForm struct {
 	Name     string
 	Email    string
@@ -29,12 +34,15 @@ type TemplateData struct {
 	Snippets []models.Snippet
 	Form     any
 	Flash    string
+	IsAuth   bool
 }
 
 func (a *app) NewTemplateData(r *http.Request) TemplateData {
-	return TemplateData{Flash: a.sessionManager.PopString(r.Context(), "flash")}
+	return TemplateData{
+		Flash:  a.sessionManager.PopString(r.Context(), "flash"),
+		IsAuth: a.isAuthenticated(r),
+	}
 }
-
 func NewTemplateCache() (map[string]*template.Template, error) {
 	cache := map[string]*template.Template{}
 	pages, err := filepath.Glob("./ui/html/pages/*.tmpl.html")

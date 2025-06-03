@@ -6,17 +6,18 @@ import (
 	"github.com/justinas/alice"
 )
 
-func (a app) routes() http.Handler {
+func (a *app) routes() http.Handler {
 	mux := http.NewServeMux()
 
 	dynamic := alice.New(a.sessionManager.LoadAndSave)
+	protected := alice.New(a.requireAuth)
 
 	mux.Handle("GET /{$}", dynamic.ThenFunc(a.home))
 
 	snippetMux := http.NewServeMux()
 	snippetMux.HandleFunc("GET /view/{id}", a.snippetView)
-	snippetMux.HandleFunc("POST /create", a.snippetCreatePost)
-	snippetMux.HandleFunc("GET /create", a.snippetCreate)
+	snippetMux.Handle("POST /create", protected.ThenFunc(a.snippetCreatePost))
+	snippetMux.Handle("GET /create", protected.ThenFunc(a.snippetCreate))
 	mux.Handle("/snippet/", http.StripPrefix("/snippet", dynamic.Then(snippetMux)))
 
 	userMux := http.NewServeMux()
@@ -24,8 +25,8 @@ func (a app) routes() http.Handler {
 	userMux.HandleFunc("POST /signup", a.userSignupPost)
 	userMux.HandleFunc("GET /login", a.userLogin)
 	userMux.HandleFunc("POST /login", a.userLoginPost)
-	userMux.HandleFunc("POST /logout", a.userLogoutPost)
-	mux.Handle("/user/", http.StripPrefix("/user", userMux))
+	userMux.Handle("POST /logout", protected.ThenFunc(a.userLogoutPost))
+	mux.Handle("/user/", http.StripPrefix("/user", dynamic.Then(userMux)))
 
 	fileserver := http.FileServer(http.Dir("./ui/static"))
 	mux.Handle("GET /static/", http.StripPrefix("/static", disableDirList(fileserver)))
