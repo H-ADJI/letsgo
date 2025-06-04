@@ -9,8 +9,8 @@ import (
 func (a *app) routes() http.Handler {
 	mux := http.NewServeMux()
 
-	dynamic := alice.New(a.sessionManager.LoadAndSave)
-	protected := alice.New(a.requireAuth)
+	dynamic := alice.New(a.sessionManager.LoadAndSave, noSurf, a.authenticate)
+	protected := dynamic.Append(a.requireAuth)
 
 	mux.Handle("GET /{$}", dynamic.ThenFunc(a.home))
 

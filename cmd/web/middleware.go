@@ -1,10 +1,23 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"strings"
+
+	"github.com/justinas/nosurf"
 )
+
+func noSurf(next http.Handler) http.Handler {
+	csrfHandler := nosurf.New(next)
+	csrfHandler.SetBaseCookie(http.Cookie{
+		HttpOnly: true,
+		Path:     "/",
+		Secure:   true,
+	})
+	return csrfHandler
+}
 
 func disableDirList(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -66,6 +79,26 @@ func (a *app) recoverPanic(next http.Handler) http.Handler {
 				a.serverError(w, r, fmt.Errorf("%s", err))
 			}
 		}()
+		next.ServeHTTP(w, r)
+	})
+}
+func (a *app) authenticate(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		id := a.sessionManager.GetInt(r.Context(), "authenticatedUserId")
+		fmt.Println("calling authenticate")
+		if id == 0 {
+			next.ServeHTTP(w, r)
+			return
+		}
+		exists, err := a.users.Exists(id)
+		if err != nil {
+			a.serverError(w, r, err)
+			return
+		}
+		if exists {
+			ctx := context.WithValue(r.Context(), isAuthenticatedContextKey, true)
+			r.WithContext(ctx)
+		}
 		next.ServeHTTP(w, r)
 	})
 }

@@ -21,7 +21,7 @@ type UserModel struct {
 	DB *sql.DB
 }
 
-func (s UserModel) Insert(name, email, password string) error {
+func (u UserModel) Insert(name, email, password string) error {
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), 12)
 	if err != nil {
 		return err
@@ -30,7 +30,7 @@ func (s UserModel) Insert(name, email, password string) error {
 		INSERT INTO users (name, email, hashed_password, created) 
 		VALUES ( ?, ?, ?, UTC_TIMESTAMP() )
 	`
-	_, err = s.DB.Exec(query, name, email, hashedPassword)
+	_, err = u.DB.Exec(query, name, email, hashedPassword)
 	if err != nil {
 		var mySQLError *mysql.MySQLError
 		if errors.As(err, &mySQLError) {
@@ -42,13 +42,13 @@ func (s UserModel) Insert(name, email, password string) error {
 	}
 	return nil
 }
-func (s UserModel) Authenticate(email, password string) (int, error) {
+func (u UserModel) Authenticate(email, password string) (int, error) {
 	var id int
 	var hashed_password []byte
 	query := `
 		SELECT id, hashed_password FROM users WHERE email = ?
 	`
-	err := s.DB.QueryRow(query, email).Scan(&id, &hashed_password)
+	err := u.DB.QueryRow(query, email).Scan(&id, &hashed_password)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return 0, ErrInvalidCreds
@@ -66,6 +66,9 @@ func (s UserModel) Authenticate(email, password string) (int, error) {
 	}
 	return id, nil
 }
-func (s UserModel) Exists(id int) (bool, error) {
-	return false, nil
+func (u UserModel) Exists(id int) (bool, error) {
+	query := "SELECT EXISTS(SELECT true FROM users WHERE id = ?)"
+	var exists bool
+	err := u.DB.QueryRow(query, id).Scan(&exists)
+	return exists, err
 }

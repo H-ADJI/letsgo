@@ -1,7 +1,6 @@
 package validator
 
 import (
-	"fmt"
 	"regexp"
 	"slices"
 	"strings"
@@ -18,7 +17,6 @@ type Validator struct {
 }
 
 func (v *Validator) IsValid() bool {
-	fmt.Println(len(v.FieldErrors))
 	return len(v.FieldErrors) == 0 && len(v.NonFieldErrors) == 0
 }
 

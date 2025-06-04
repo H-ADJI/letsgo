@@ -103,7 +103,9 @@ func (a *app) snippetCreatePost(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, fmt.Sprintf("/snippet/view/%d", id), http.StatusSeeOther)
 }
 func (a *app) userSignup(w http.ResponseWriter, r *http.Request) {
-	a.render(w, r, http.StatusOK, "signup.tmpl.html", TemplateData{Form: userSignupForm{}})
+	data := a.NewTemplateData(r)
+	data.Form = userSignupForm{}
+	a.render(w, r, http.StatusOK, "signup.tmpl.html", data)
 }
 func (a *app) userSignupPost(w http.ResponseWriter, r *http.Request) {
 	err := r.ParseForm()
@@ -156,7 +158,9 @@ func (a *app) userSignupPost(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/user/login", http.StatusSeeOther)
 }
 func (a *app) userLogin(w http.ResponseWriter, r *http.Request) {
-	a.render(w, r, http.StatusOK, "login.tmpl.html", TemplateData{Form: userLoginForm{}})
+	data := a.NewTemplateData(r)
+	data.Form = userLoginForm{}
+	a.render(w, r, http.StatusOK, "login.tmpl.html", data)
 }
 func (a *app) userLoginPost(w http.ResponseWriter, r *http.Request) {
 	err := r.ParseForm()

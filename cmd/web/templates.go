@@ -8,6 +8,7 @@ import (
 
 	"github.com/H-ADJI/letsgo/internal/models"
 	"github.com/H-ADJI/letsgo/internal/validator"
+	"github.com/justinas/nosurf"
 )
 
 var funcMap = template.FuncMap{"humanDate": humanDate}
@@ -30,17 +31,19 @@ type snippetCreateForm struct {
 	validator.Validator
 }
 type TemplateData struct {
-	Snippet  models.Snippet
-	Snippets []models.Snippet
-	Form     any
-	Flash    string
-	IsAuth   bool
+	Snippet   models.Snippet
+	Snippets  []models.Snippet
+	Form      any
+	Flash     string
+	IsAuth    bool
+	CSRFToken string
 }
 
 func (a *app) NewTemplateData(r *http.Request) TemplateData {
 	return TemplateData{
-		Flash:  a.sessionManager.PopString(r.Context(), "flash"),
-		IsAuth: a.isAuthenticated(r),
+		Flash:     a.sessionManager.PopString(r.Context(), "flash"),
+		IsAuth:    a.isAuthenticated(r),
+		CSRFToken: nosurf.Token(r),
 	}
 }
 func NewTemplateCache() (map[string]*template.Template, error) {

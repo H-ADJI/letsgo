@@ -42,5 +42,10 @@ func (a *app) render(
 	buf.WriteTo(w)
 }
 func (a *app) isAuthenticated(r *http.Request) bool {
-	return a.sessionManager.Exists(r.Context(), "authenticatedUserId")
+	isAuth, ok := r.Context().Value(isAuthenticatedContextKey).(bool)
+	if !ok {
+		return false
+	}
+	fmt.Println(isAuth)
+	return isAuth
 }
