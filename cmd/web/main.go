@@ -13,6 +13,7 @@ import (
 	"github.com/alexedwards/scs/mysqlstore"
 	"github.com/alexedwards/scs/v2"
 	_ "github.com/go-sql-driver/mysql"
+	"github.com/lmittmann/tint"
 )
 
 type app struct {
@@ -29,10 +30,7 @@ func main() {
 	flag.Parse()
 
 	logger := slog.New(
-		slog.NewTextHandler(
-			os.Stdout,
-			&slog.HandlerOptions{AddSource: true, Level: slog.LevelDebug},
-		),
+		tint.NewHandler(os.Stdout, &tint.Options{AddSource: true, Level: slog.LevelDebug}),
 	)
 
 	db, err := openDB(*dsn)
