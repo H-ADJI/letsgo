@@ -85,7 +85,6 @@ func (a *app) recoverPanic(next http.Handler) http.Handler {
 func (a *app) authenticate(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		id := a.sessionManager.GetInt(r.Context(), "authenticatedUserId")
-		fmt.Println("calling authenticate")
 		if id == 0 {
 			next.ServeHTTP(w, r)
 			return
@@ -97,7 +96,7 @@ func (a *app) authenticate(next http.Handler) http.Handler {
 		}
 		if exists {
 			ctx := context.WithValue(r.Context(), isAuthenticatedContextKey, true)
-			r.WithContext(ctx)
+			r = r.WithContext(ctx)
 		}
 		next.ServeHTTP(w, r)
 	})

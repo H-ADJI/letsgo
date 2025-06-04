@@ -46,6 +46,5 @@ func (a *app) isAuthenticated(r *http.Request) bool {
 	if !ok {
 		return false
 	}
-	fmt.Println(isAuth)
 	return isAuth
 }
