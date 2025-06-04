@@ -2,12 +2,14 @@ package main
 
 import (
 	"html/template"
+	"io/fs"
 	"net/http"
 	"path/filepath"
 	"time"
 
 	"github.com/H-ADJI/letsgo/internal/models"
 	"github.com/H-ADJI/letsgo/internal/validator"
+	"github.com/H-ADJI/letsgo/ui"
 	"github.com/justinas/nosurf"
 )
 
@@ -48,29 +50,29 @@ func (a *app) NewTemplateData(r *http.Request) TemplateData {
 }
 func NewTemplateCache() (map[string]*template.Template, error) {
 	cache := map[string]*template.Template{}
-	pages, err := filepath.Glob("./ui/html/pages/*.tmpl.html")
+	pages, err := fs.Glob(ui.Files, "html/pages/*.tmpl.html")
 	if err != nil {
 		return nil, err
 	}
 	for _, page := range pages {
 		name := filepath.Base(page)
 		files := []string{
-			"./ui/html/base.tmpl.html",
+			"html/base.tmpl.html",
+			"html/partials/*.tmpl.html",
 			page,
 		}
-		ts, err := template.New(name).Funcs(funcMap).ParseFiles(files...)
-		if err != nil {
-			return nil, err
-		}
-		ts, err = ts.ParseGlob("./ui/html/partials/*.tmpl.html")
+		ts, err := template.New(name).Funcs(funcMap).ParseFS(ui.Files, files...)
 		if err != nil {
 			return nil, err
 		}
 		cache[name] = ts
-
 	}
 	return cache, nil
 }
 func humanDate(t time.Time) string {
-	return t.Format("02 Jan 2006 at 15:04")
+	if t.IsZero() {
+		return ""
+	}
+	return t.UTC().Format("02 Jan 2006 at 15:04")
+
 }

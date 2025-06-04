@@ -3,6 +3,7 @@ package main
 import (
 	"net/http"
 
+	"github.com/H-ADJI/letsgo/ui"
 	"github.com/justinas/alice"
 )
 
@@ -28,8 +29,8 @@ func (a *app) routes() http.Handler {
 	userMux.Handle("POST /logout", protected.ThenFunc(a.userLogoutPost))
 	mux.Handle("/user/", http.StripPrefix("/user", userMux))
 
-	fileserver := http.FileServer(http.Dir("./ui/static"))
-	mux.Handle("GET /static/", http.StripPrefix("/static", disableDirList(fileserver)))
+	fileserver := http.FileServerFS(ui.Files)
+	mux.Handle("GET /static/", disableDirList(fileserver))
 
 	standard := alice.New(a.recoverPanic, a.logRequest, commonHeaders)
 	return standard.Then(mux)
