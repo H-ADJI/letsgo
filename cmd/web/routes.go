@@ -14,6 +14,7 @@ func (a *app) routes() http.Handler {
 	protected := dynamic.Append(a.requireAuth)
 
 	mux.Handle("GET /{$}", dynamic.ThenFunc(a.home))
+	mux.HandleFunc("GET /ping", ping)
 
 	snippetMux := http.NewServeMux()
 	snippetMux.Handle("GET /view/{id}", dynamic.ThenFunc(a.snippetView))
