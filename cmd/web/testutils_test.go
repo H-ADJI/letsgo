@@ -8,11 +8,26 @@ import (
 	"net/http/cookiejar"
 	"net/http/httptest"
 	"testing"
+	"time"
+
+	"github.com/H-ADJI/letsgo/internal/models/mocks"
+	"github.com/alexedwards/scs/v2"
 )
 
 func newTestApp(t *testing.T) *app {
+	templateCache, err := NewTemplateCache()
+	if err != nil {
+		t.Fatal(err)
+	}
+	sessionManager := scs.New()
+	sessionManager.Lifetime = 12 * time.Hour
+	sessionManager.Cookie.Secure = true
 	a := &app{
-		logger: slog.New(slog.NewTextHandler(io.Discard, nil)),
+		logger:         slog.New(slog.NewTextHandler(io.Discard, nil)),
+		snippets:       &mocks.SnippetModel{},
+		users:          &mocks.UserModel{},
+		templateCache:  templateCache,
+		sessionManager: sessionManager,
 	}
 	return a
 }

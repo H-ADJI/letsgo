@@ -16,6 +16,11 @@ type Snippet struct {
 type SnippetModel struct {
 	DB *sql.DB
 }
+type SnippetModelInterface interface {
+	Insert(title string, content string, expires int) (int, error)
+	Get(id int) (Snippet, error)
+	Latest() ([]Snippet, error)
+}
 
 func (s SnippetModel) Insert(title string, content string, expires int) (int, error) {
 	query := `
